@@ -1,11 +1,17 @@
 #include "PlayField.h"
-
+#include "Input.h"
 #include "GameObject.h"
+
+PlayField::PlayField(Vector2D iBounds) : bounds(iBounds)
+{
+	controllerInput = new RndInput();
+}
 
 void PlayField::Update()
 {
 	// Update list of active objects in the world
-	for (auto it : gameObjects)
+	auto currentGameObjects = gameObjects;
+	for (auto& it : currentGameObjects)
 	{
 		it->Update(*this);
 	}
@@ -13,7 +19,7 @@ void PlayField::Update()
 
 GameObject* PlayField::GetPlayerObject()
 {
-	auto it = std::find_if(gameObjects.begin(), gameObjects.end(), [](GameObject* in) { return (strcmp(in->m_objType, "playerShip") == 0); });
+	auto it = std::find_if(gameObjects.begin(), gameObjects.end(), [](GameObject* in) { return (strcmp(in->m_objType, "PlayerShip") == 0); });
 	if (it != gameObjects.end())
 		return (*it);
 	else
@@ -22,7 +28,7 @@ GameObject* PlayField::GetPlayerObject()
 
 void PlayField::SpawnLaser(GameObject* newObj)
 {
-	if (strcmp(newObj->m_objType, "alienLaser") == 0)
+	if (strcmp(newObj->m_objType, "AlienLaser") == 0)
 		AlienLasers--;
 
 	else if (strcmp(newObj->m_objType, "PlayerLaser") == 0)

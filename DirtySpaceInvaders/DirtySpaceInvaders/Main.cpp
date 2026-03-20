@@ -25,7 +25,7 @@ int main()
 	{
 		Alien& a = *(new Alien);
 		a.pos.x = (float)xCoord(rGen);
-		a.pos.x = (float)yCoord(rGen);
+		a.pos.y = (float)yCoord(rGen);
 		world.AddObject(&a);
 	}
 
@@ -34,8 +34,11 @@ int main()
 	p->pos = Vector2D(40, 27);
 	world.AddObject(p);
 
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < 1000; i++)
 	{
+		if (world.GetPlayerObject() == nullptr)
+			break;
+
 		world.Update();
 
 		RenderItemList rl;

@@ -3,3 +3,138 @@ Exemple
 Problème : J'ai faim
 Cause : Je n'ai pas mangé
 Solution : Je mange
+
+Problème : crash in PlayerShip update
+if (world.controllerInput->Left())
+Cause : world.controllerInput is null
+Solution : Create controllerInput
+PlayField::PlayField(Vector2D iBounds) : bounds(iBounds)
+{
+	controllerInput = new RndInput();
+}
+
+Problème : crash on second it access.
+First Update is done successfully first time in the Main cpp.
+	for (auto it : gameObjects)
+	{
+		it->Update(*this);
+	}
+Cause : The list is updated while the iterator runs
+if (fireRate(rGen) < 0.5 && world.AlienLasers > 0)
+{
+	//Spawn laser
+	GameObject& newLaser = *(new AlienLaser);
+	newLaser.pos = pos;
+	world.SpawnLaser(&newLaser);
+}
+Solution : Copy the list before iterating.
+	auto currentGameObjects = gameObjects;
+	for (auto& it : currentGameObjects)
+	{
+		it->Update(*this);
+	}
+
+Problème : player is null
+	GameObject* player = world.GetPlayerObject();
+	if (pos.IntCmp(player->pos))
+	{
+		deleted = true;
+		world.RemoveObject(player);
+	}
+Cause : "playerShip" is searched even though it's called "PlayerShip"
+GameObject* PlayField::GetPlayerObject()
+{
+	auto it = std::find_if(gameObjects.begin(), gameObjects.end(), [](GameObject* in) { return (strcmp(in->m_objType, "playerShip") == 0); });
+	if (it != gameObjects.end())
+		return (*it);
+	else
+		return nullptr;
+}
+Solution : replace "playerShip" with "PlayerShip"
+
+Problème : alien lasers don't despawn
+Cause : this lol, I saw it just after the PlayerShip thing
+if (strcmp(newObj->m_objType, "alienLaser") == 0)
+	AlienLasers--;
+Solution : replace "alienShip" with "AlienShip"
+
+Problème : crash on PlayerLaser destructor
+PlayerLaser::~PlayerLaser()
+{
+	delete[] m_objType;
+}
+Cause : PlayerLaser is destructed in its Update loop, causing the gameObjects list to change directly during iteration
+void PlayerLaser::Update(PlayField& world)
+{
+	bool deleted = false;
+	pos.y -= 1.f;
+	if (pos.y < 0)
+	{
+		deleted = true;
+	}
+
+	if (deleted)
+	{
+		world.DespawnLaser(this);
+		delete this;
+	}
+}
+Solution : Remove "delete this" as "world.DespawnLaser(this);" already takes care of cleanly despawning the lazer.
+
+Problème : aliens spawn in a boring straight line
+Cause : yCoord overwrites x position
+	for (int k = 0; k < 20; k++)
+	{
+		Alien& a = *(new Alien);
+		a.pos.x = (float)xCoord(rGen);
+		a.pos.x = (float)yCoord(rGen);
+		world.AddObject(&a);
+	}
+Solution : a.pos.y = (float)yCoord(rGen);
+
+Problème : hit Aliens do not disappear
+Cause : nothing checks for their death
+Solution : add this to PlayerLaser Update
+auto currentGameObjects = world.GameObjects();
+for (auto& it : currentGameObjects)
+{
+	if (pos.IntCmp(it->pos) && strcmp(it->m_objType, "AlienShip") == 0)
+	{
+		deleted = true;
+		auto shouldDie = it->DecreaseHealth();
+		if (shouldDie)
+			world.RemoveObject(it);
+	}
+}
+
+Problème : crash on player death
+Cause : no null check just after trying to get the player
+GameObject* player = world.GetPlayerObject();
+if (pos.IntCmp(player->pos))
+{
+	deleted = true;
+	world.RemoveObject(player);
+}
+Solution : check for null
+
+	GameObject* player = world.GetPlayerObject();
+	if (player != nullptr && pos.IntCmp(player->pos))
+	{
+		deleted = true;
+		world.RemoveObject(player);
+	}
+
+add this to main game loop
+	for (int i = 0; i < 100; i++)
+	{
+		if (world.GetPlayerObject() == nullptr)
+			break;
+
+		world.Update();
+
+
+
+Problème : game ends early in seed 2
+Cause : not enough game loops
+Solution : increase loop from 100 to 1000
+for (int i = 0; i < 1000; i++)
